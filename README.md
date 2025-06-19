@@ -1,4 +1,4 @@
-# task-2
+# Codealphas_task-2
 # 🎵 Music Generation with AI
 
 This project demonstrates how to generate original music using deep learning. By training a neural network on MIDI files, the system learns musical patterns and generates new sequences in MIDI format.
