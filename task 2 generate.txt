@@ -1,0 +1,45 @@
+from tensorflow.keras.models import load_model
+import pickle, numpy as np
+from music21 import instrument, stream, note, chord
+
+model = load_model("model/music_model.h5")
+
+with open("data/notes.pkl", "rb") as f:
+    notes = pickle.load(f)
+
+pitches = sorted(set(notes))
+note_to_int = dict((note, num) for num, note in enumerate(pitches))
+int_to_note = dict((num, note) for num, note in enumerate(pitches))
+
+sequence_length = 100
+start = np.random.randint(0, len(notes) - sequence_length)
+pattern = [note_to_int[n] for n in notes[start:start + sequence_length]]
+
+output_notes = []
+
+for _ in range(300):
+    input_seq = np.reshape(pattern, (1, len(pattern), 1)) / float(len(pitches))
+    prediction = model.predict(input_seq, verbose=0)
+    index = np.argmax(prediction)
+    result = int_to_note[index]
+    output_notes.append(result)
+    pattern.append(index)
+    pattern = pattern[1:]
+
+offset = 0
+music_stream = stream.Stream()
+
+for pattern in output_notes:
+    if '.' in pattern:
+        notes_in_chord = pattern.split('.')
+        chord_notes = [note.Note(int(n)) for n in notes_in_chord]
+        new_chord = chord.Chord(chord_notes)
+        new_chord.offset = offset
+        music_stream.append(new_chord)
+    else:
+        new_note = note.Note(pattern)
+        new_note.offset = offset
+        music_stream.append(new_note)
+    offset += 0.5
+
+music_stream.write('midi', fp='output/generated_music.mid')
